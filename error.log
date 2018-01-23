@@ -1,0 +1,21 @@
+2018-01-22 11:33:29,481 :: WARNING :: Error - download.py - getEnsembl - Download '
+2018-01-22 11:33:29,481 :: WARNING :: Exception at the line : 102
+2018-01-22 11:33:29,481 :: WARNING :: (<class 'subprocess.CalledProcessError'>, CalledProcessError(), <traceback object at 0x1097c6050>)
+2018-01-22 11:33:29,764 :: WARNING :: Error - download.py - getEnsembl - Download '
+2018-01-22 11:33:29,764 :: WARNING :: Exception at the line : 114
+2018-01-22 11:33:29,764 :: WARNING :: (<class 'subprocess.CalledProcessError'>, CalledProcessError(), <traceback object at 0x1097c6098>)
+2018-01-22 11:33:30,040 :: WARNING :: Error - download.py - getEnsembl - Download '
+2018-01-22 11:33:30,041 :: WARNING :: Exception at the line : 126
+2018-01-22 11:33:30,041 :: WARNING :: (<class 'subprocess.CalledProcessError'>, CalledProcessError(), <traceback object at 0x1097c60e0>)
+2018-01-22 11:47:41,468 :: WARNING :: Error - download.py - getGenome - Download '
+2018-01-22 11:47:41,481 :: WARNING :: Exception at the line : 90
+2018-01-22 11:47:41,481 :: WARNING :: (<class 'subprocess.CalledProcessError'>, CalledProcessError(), <traceback object at 0x105f860e0>)
+2018-01-22 14:34:28,852 :: WARNING :: Error - download.py - get_study '
+2018-01-22 14:34:28,875 :: WARNING :: Exception at the line : 154
+2018-01-22 14:34:28,876 :: WARNING :: (<class 'subprocess.CalledProcessError'>, CalledProcessError(), <traceback object at 0x1025b2440>)
+2018-01-22 16:08:20,420 :: WARNING :: Error - download.py - get_study '
+2018-01-22 16:08:20,420 :: WARNING :: Exception at the line : 164
+2018-01-22 16:08:20,420 :: WARNING :: (<class 'subprocess.CalledProcessError'>, CalledProcessError(), <traceback object at 0x110482050>)
+2018-01-22 16:08:37,142 :: WARNING :: Error - download.py - get_study '
+2018-01-22 16:08:37,143 :: WARNING :: Exception at the line : 164
+2018-01-22 16:08:37,143 :: WARNING :: (<class 'subprocess.CalledProcessError'>, CalledProcessError(), <traceback object at 0x111be5050>)
