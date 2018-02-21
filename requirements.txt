@@ -1,2 +1,0 @@
-configparser==3.5.0
-pandas==0.22.0
