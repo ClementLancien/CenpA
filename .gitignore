@@ -1,8 +1,0 @@
-/venv
-/venv3
-*.bam
-*.bed
-*.txt
-*.csv
-*.gz
-*.DS_Store
