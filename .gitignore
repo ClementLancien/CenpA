@@ -1,0 +1,7 @@
+/venv
+/venv3
+*.bam
+*.bed
+*.txt
+*.csv
+*.gz
