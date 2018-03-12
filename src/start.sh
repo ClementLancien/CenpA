@@ -75,6 +75,8 @@ __show_options()
     printf "$formatPrintBlue" "(18) - test"
     printf "$formatPrintRed" "(19) - kallistoindex"
     printf "$formatPrintRed" "(20) - kallistoquant "
+    printf "$formatPrintBlue" "(21) - confusionmatrixcytoband"
+    printf "$formatPrintBlue" "(22) - mergeconfusionmatrixcytoband"
 }
 
 if [ $# -eq 0 ]; then
@@ -126,7 +128,7 @@ else
 					;;
 			10)
 					__merge_overlap_cytoband SRR633614 SRR633612 10 3 1
-					__merge_overlap_cytoband SRR633615 SRR633613 10 2 0
+					__merge_overlap_cytoband SRR633615 SRR633613 10 3 0
 					;;
 			11)
 					__overlap_features SRR633614 SRR633612 10 3
@@ -153,14 +155,22 @@ else
 					__replace_header_genome_fasta /data/tmp/clancien/Genomes/Homo_sapiens.GRCh38.dna_rm.primary_assembly.fa /data/tmp/clancien/Genomes/Homo_sapiens.GRCh38.dna_rm.primary_assembly.header.fa
 					;;
 			18)
-					__test /data/tmp/clancien/Genomes/Homo_sapiens.GRCh38.dna_rm.primary_assembly.header.fa /data/tmp/clancien/Cytoband/cytoBand.txt
+					__test /data/tmp/clancien/Genomes/sm/Homo_sapiens.GRCh38.dna_sm.toplevel.fa /data/tmp/clancien/Cytoband/cytoBand.txt /data/tmp/clancien/Genomes/human_genome_split_cytoband.fa
 					;;
 			19)
-					__kallisto_index /data/tmp/clancien/Genomes/cytoband/cytoband_genome.fa /data/tmp/clancien/cytoband/cytoband_genome.idx
+					__kallisto_index /data/tmp/clancien/Genomes/human_genome_split_cytoband.fa /data/tmp/clancien/cytoband/cytoband_genome.idx
 					;;
 			20)
 					__kallisto_quant SRR633614 SRR633612 10 3
 					#__kallisto_quant SRR633615 SRR633613 10 3
+					;;
+			21)
+					#__confusion_matrix_cytoband SRR633614 SRR633612 10 3
+					__confusion_matrix_cytoband SRR633615 SRR633613 10 3
+					;;
+			22)
+					__merge_confusion_matrix_cytoband SRR633614 SRR633612 10 3 1
+					#__merge_confusion_matrix_cytoband SRR633615 SRR633613 10 3 0
 					;;
 	        *)
 					__show_options

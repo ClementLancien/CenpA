@@ -26,10 +26,11 @@ readonly ALIGN="${BASE_DIR}/Result/Align"
 readonly STDERR="${BASE_DIR}/stderr"
 readonly STDOUT="${BASE_DIR}/stdout"
 readonly LOGFILE="${BASE_DIR}/report.log"
-readonly GENOME="${BASE_DIR}/Genomes/cytoband"
+readonly GENOME="${BASE_DIR}/Genomes"
 readonly KALLISTO_FOLDER="${BASE_DIR}/Result/Kallisto"
 readonly INDEX_KALLISTO="${BASE_DIR}/Genomes/cytoband/cytoband_genome.fa"
-
+readonly THOUSANDGENOMES="${BASE_DIR}/Result/1000Genomes"
+readonly TMP="${BASE_DIR}/Result/tmp"
 ### SETUP TOOLS PATHS ### 
 readonly SAMTOOLS="/bioinfo/local/build/samtools/samtools-1.3/bin/samtools"
 readonly BEDTOOLS="/bioinfo/local/build/BEDTools/BEDTools_2.25.0/bin/bedtools"
@@ -69,7 +70,7 @@ readonly overlap_cytoband_noncentromeric_opt="-q batch -l nodes=1:ppn=1,mem=15mb
 readonly overlap_features_centromeric_opt="-q batch -l nodes=1:ppn=1,mem=15mb,walltime=00:20:00"
 #readonly overlap_features_noncentromeric_opt="-q batch -l nodes=1:ppn=1,mem=15mb,walltime=02:00:00"
 readonly fastq_read_name_opt="-q batch -l nodes=1:ppn=1,mem=15mb,walltime=00:20:00"
-readonly kallisto_index_opt="-q batch -l nodes=1:ppn=1,mem=60gb,walltime=01:00:00"
+readonly kallisto_index_opt="-q batch -l nodes=1:ppn=1,mem=500gb,walltime=01:00:00"
 readonly kallisto_quant_opt="-q batch -l nodes=1:ppn=8,mem=12gb,walltime=02:00:00"
 
 ###############################
@@ -693,7 +694,7 @@ __merge_overlap_cytoband()
 	total=$(($3*900000))
 	file_out=$ALIGN/cytoband.count.txt
 
-	if [ $4 -eq 1 ] ; then
+	if [ $5 -eq 1 ] ; then
 		if [ -f $file_out ]; then rm $file_out; fi;
 		echo "centromeric_sample,noncentromeric_sample,read_number,subsample,centromeric_number,noncentromeric_number,repeat,observed_ratio,theorical_ratio" >> $file_out
 	fi
@@ -784,7 +785,71 @@ __confusion_matrix_cytoband()
 	#
 	# Use of : comm -12 < (sort file1 | uniq) < (sort file2 | uniq)
 	#
-	echo "toto"
+
+	#TIMESTAMPING
+	local tTIME=$(date +"${TIME_FORMAT}")
+	local UUID=$(cat /proc/sys/kernel/random/uuid)
+
+	#INIT qsub option
+	local opt="-o ${STDOUT}/${NOW}/confusion_matrix_cytoband_${tTIME}_${UUID} -e ${STDERR}/${NOW}/confusion_matrix_cytoband_${tTIME}_${UUID}"
+	local opt_count="$opt $count_opt" 
+
+	centromeric_sample=$1
+	noncentromeric_sample=$2
+
+	for((i=900000;i<=$3*900000;i+=900000))
+	do
+		for repeat in $(seq 1 $4)
+		do
+			local centromeric_path=$ALIGN/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.centromeric.cytoband.bam
+			local noncentromeric_path=$ALIGN/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.noncentromeric.cytoband.bam
+			#echo "^$1"
+			c_c="$SAMTOOLS view $centromeric_path | grep "^$1" | wc -l > $TMP/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.c_c"
+			c_nc="$SAMTOOLS view $centromeric_path | grep "^$2" | wc -l >  $TMP/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.c_nc"
+
+			#echo "${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.c $c_c $c_nc" >> $output
+
+			nc_c="$SAMTOOLS view $noncentromeric_path | grep "^$1" | wc -l > /data/tmp/clancien/Result/tmp/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.nc_c"
+			nc_nc="$SAMTOOLS view $noncentromeric_path | grep "^$2" | wc -l > /data/tmp/clancien/Result/tmp/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.nc_nc"
+
+			c_c_job_id=$(echo $c_c | qsub $opt_count -N ${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.c_c)
+			c_nc_job_id=$(echo $c_nc | qsub $opt_count -N ${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.c_nc)
+			nc_c_job_id=$(echo $nc_c | qsub $opt_count -N ${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.nc_c)
+			nc_nc_job_id=$(echo $nc_nc | qsub $opt_count -N ${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.nc_nc)
+			#echo "${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.nc $nc_c $nc_nc" >> $output
+		done
+	done
+}
+__merge_confusion_matrix_cytoband()
+{
+	# $1 centromere
+	#
+	# Use of : comm -12 < (sort file1 | uniq) < (sort file2 | uniq)
+	#
+
+	centromeric_sample=$1
+	noncentromeric_sample=$2
+
+	output=$ALIGN/confusion_matrix_cytoband
+	if [ $5 -eq 1 ] ; then
+		if [ -f $output ]; then rm $output; fi;
+	fi
+	centromeric_sample=$1
+	noncentromeric_sample=$2
+
+	for((i=900000;i<=$3*900000;i+=900000))
+	do
+		for repeat in $(seq 1 $4)
+		do
+			local c_c=$( head -n 1 $TMP/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.c_c)
+			local c_nc=$( head -n 1 $TMP/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.c_nc)
+			local nc_c=$( head -n 1 $TMP/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.nc_c)
+			local nc_nc=$( head -n 1 $TMP/${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.nc_nc)
+			
+			echo "${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.c,$c_c,$c_nc" >> $output
+			echo "${centromeric_sample}.${noncentromeric_sample}.subsample.${repeat}.${i}.nc,$nc_c,$nc_nc" >> $output
+		done
+	done
 }
 #
 # Purpose
@@ -809,10 +874,13 @@ __overlap_features() #centromeric #noncentromeric ##percent #repeat
 			bam_in="$ALIGN/${1}.${2}.subsample.${repeat}.${sample_centromeric_size}.bam"
 
 			#GET cmd
-			ovlp_centromeric="$SAMTOOLS view -L $features_centromeric $bam_in -b | $SAMTOOLS view | wc -l > $ALIGN/${1}.${2}.subsample.${repeat}.${sample_centromeric_size}.centromeric.features"
+			#ovlp_centromeric="$SAMTOOLS view -L $features_centromeric $bam_in -b | $SAMTOOLS view | wc -l > $ALIGN/${1}.${2}.subsample.${repeat}.${sample_centromeric_size}.centromeric.features"
 			#ovlp_noncentromeric="$SAMTOOLS view -L $features_noncentromeric $bam_in -b | $SAMTOOLS view | wc -l > $ALIGN/${1}.${2}.subsample.${repeat}.${sample_centromeric_size}.noncentromeric.features"
-			ovlp_noncentromeric="$SAMTOOLS view $bam_in | wc -l > $ALIGN/${1}.${2}.subsample.${repeat}.${sample_centromeric_size}.noncentromeric.features "
-			
+			##ovlp_noncentromeric="$SAMTOOLS view $bam_in | wc -l > $ALIGN/${1}.${2}.subsample.${repeat}.${sample_centromeric_size}.noncentromeric.features "
+
+			ovlp_centromeric="$SAMTOOLS view -L $features_centromeric $bam_in -b > $ALIGN/${1}.${2}.subsample.${repeat}.${sample_centromeric_size}.centromeric.features.bam"
+			ovlp_noncentromeric="$SAMTOOLS view $bam_in -b > $ALIGN/${1}.${2}.subsample.${repeat}.${sample_centromeric_size}.noncentromeric.features.bam"
+
 			#SUBMIT job
 			ovlp_centromeric_jid="$(echo "$ovlp_centromeric" | qsub $opt_overlap_features_centromeric -N features.centromeric.${1}.${2}.subsample.${repeat}.${sample_centromeric_size} )"
 			#ovlp_noncentromeric_jid="$(echo "$ovlp_noncentromeric" | qsub $features_noncentromeric -N features.noncentromeric.${1}.${2}.subsample.${repeat}.${sample_centromeric_size})"
@@ -836,7 +904,7 @@ __merge_overlap_features()
 	local total=$(($3*900000))
 	local file_out=$ALIGN/features.count.txt
 
-	if [ $4 -eq 1 ] ; then
+	if [ $5 -eq 1 ] ; then
 		if [ -f $file_out ]; then rm $file_out; fi;
 		echo "centromeric_sample,noncentromeric_sample,read_number,subsample,centromeric_number,noncentromeric_number,repeat,observed_ratio,theorical_ratio" >> $file_out
 	fi
@@ -994,44 +1062,48 @@ __replace_header_genome_fasta()
 __test()
 {
 
-	if [ -f $GENOME/cytoband_genome.fa ]; then rm $GENOME/cytoband_genome.fa; fi
+	if [ -f $3 ]; then rm $3; fi
 
 	for header in $(ls | grep "^>" $1)
 	do
-		echo $header
-
+		#echo $header
+		
 		if [ ${header:0:1} == ">" ]; then
 			local chromosome=${header:1}
-			local chromosome=$(sed -r 's/\./v/' <<< $chromosome)
+			#echo ${chromosome:0:3}
+		
+			if [ ${chromosome:0:3} != "CHR" ]; then
 
-			if [ $chromosome == "MT" ]; then 
-				chromosome=${chromosome:0:1}; 
-			fi
+				local chromosome=$(sed -r 's/\./v/' <<< $chromosome)
 
-			local i=0
-			while read line
-			do
-				local chr=$(echo $line | cut -d ' ' -f 1)
-
-				if [ "chr${chromosome}" == "$chr" ] || [ ${#chromosome} -gt 2 ] && [[  "$chr" =~ $chromosome ]]; then
-					local array=($line)
-
-					str=$(sed -r 's/ /\_/g' <<< $line)
-
-					$($SAMTOOLS faidx $1 "${header:1}:${array[1]}-${array[2]}" > $GENOME/${str})
-					#echo $str
-					#sed -i "1s/.*/>$str/" $GENOME/${str}
-					sed -i "1s/.*/>$str/" $GENOME/${str}
-					cat $GENOME/${str} >> $GENOME/${array[0]}.tmp
-					rm $GENOME/${str}
-
+				if [ $chromosome == "MT" ]; then 
+					chromosome=${chromosome:0:1}; 
 				fi
-			done < $2
 
-			cat $GENOME/*.tmp >> $GENOME/cytoband_genome.fa
-			rm $GENOME/*.tmp
+				local i=0
+				while read line
+				do
+					local chr=$(echo $line | cut -d ' ' -f 1)
 
-		printf "$formatPrintRed" "END"
+					if [ "chr${chromosome}" == "$chr" ] || [ ${#chromosome} -gt 2 ] && [[  "$chr" =~ $chromosome ]]; then
+						local array=($line)
+
+						str=$(sed -r 's/ /\_/g' <<< $line)
+
+						$($SAMTOOLS faidx $1 "${header:1}:${array[1]}-${array[2]}" > $GENOME/${str})
+						#echo $str
+						#sed -i "1s/.*/>$str/" $GENOME/${str}
+						sed -i "1s/.*/>$str/" $GENOME/${str}
+						cat $GENOME/${str} >> $GENOME/${array[0]}.tmp
+						rm $GENOME/${str}
+
+					fi
+				done < $2
+
+				cat $GENOME/*.tmp >> $3
+				rm $GENOME/*.tmp
+			fi
+		# printf "$formatPrintRed" "END"
 		#exit
 		fi
 	done
@@ -1115,9 +1187,13 @@ __kallisto_quant()
 		done
 	done
 }
-
-
-
+#
+# Purpose
+#
+_1000_genome()
+{
+	echo "t"
+}
 
 ###################################
 # Main Script Logic Starts Here   #
